@@ -1,1 +1,1808 @@
-{"basePath":"/api/v1","definitions":{"aiData":{"description":"Data used to produce Authentication input for token authentication","properties":{"aid":{"description":"Full AID (in lowercase hex) as read from the PICC","type":"string"},"loc":{"description":"Current geographical location of the terminal (WGS84 decimal tuple)","pattern":"^\\-?[0-9]*(\\.[0-9]+)?,\\-?[0-9]*(\\.[0-9]+)?$","type":"string"},"pid":{"description":"Terminal Participant Identifier","format":"int64","type":"integer"},"signatureCounter":{"description":"Signature counter as read from the PICC","format":"int64","type":"integer"},"terminalId":{"description":"Identifier of the terminal","type":"string"},"time":{"description":"Current time as ISO 8601:2004 profile extended format (MTS8, chapter 2.3)","format":"date-time","type":"string"}},"required":["time","terminalId"],"type":"object"},"aiRequest":{"description":"Authentication request as sent to the PICC","format":"base64url","type":"string"},"aiResponse":{"description":"Authentication response as received from PICC","format":"base64url","type":"string"},"blacklist":{"items":{"$ref":"#/definitions/blacklistEntry"},"type":"array"},"blacklistEntry":{"properties":{"blacklistEntryId":{"description":"Ever increasing blacklist entry identifier","format":"int64","type":"integer"},"expire":{"description":"Expire time stamp in ISO 8601 format","format":"date-time","type":"string"},"ticketId":{"type":"string"},"tokenId":{"type":"string"},"travellerId":{"type":"string"}},"required":["blacklistEntryId"],"type":"object"},"deviceReference":{"description":"Device Reference, unique reference for device that creates device signed tickets","properties":{"did":{"description":"Device identifier","format":"base64url","type":"string"},"pid":{"description":"Participant identifier","format":"int64","type":"integer"}},"required":["pid","did"],"type":"object"},"emvTransaction":{"description":"Contactless payment card (EMV) transaction information","properties":{"aid":{"description":"Application Identifier","example":"A0000008381010","pattern":"^[0-9A-Fa-f]{10,32}$","type":"string"},"closed":{"description":"Card is closed loop","type":"boolean"},"deviceId":{"description":"Device (terminal) identifier","example":"2EF23D68-F810-4BC2-82E6-C17795D48F60","type":"string"},"deviceTransactionId":{"description":"Device (terminal) transaction identifier","example":"7997D984-7164-4BC3-9B0F-D4F575F6780F","type":"string"},"tokenId":{"description":"Token identifier:\n- MTS7: Token JWK fingerprint (per RFC 7638)\n- EMV: base64url-encoded SHA-256 of the ICC Public Key Certificate (EMV tag 9F46)\n","type":"string"},"transactionId":{"description":"Payment transaction identifier","example":"4B3249E2-EFFD-4C42-B604-D632C58E46FC","type":"string"}},"type":"object"},"fare":{"description":"Fare information, amount, currency and VAT","properties":{"amount":{"description":"Fare cost excluding VAT","format":"float","type":"number"},"currency":{"description":"Currency code (ISO 4217)","type":"string"},"vatAmount":{"description":"VAT amount","format":"float","type":"number"},"vatPercent":{"description":"VAT percent","format":"float","type":"number"}},"required":["amount","currency","vatAmount","vatPercent"],"type":"object"},"fraudcheckData":{"description":"N.B. - fraud check data MUST NOT be retained by respondent","properties":{"geo":{"$ref":"#/definitions/geoPosition"},"mtbReference":{"$ref":"#/definitions/mtbReference"},"time":{"description":"Time stamp in ISO 8601 format","format":"date-time","type":"string"}},"type":"object"},"fraudcheckResponse":{"description":"N.B. - response MUST only be given once per validation event and client. Velocity <= 5 km/h or distance <= 1 km shall render 0 km/h.","properties":{"velocity":{"description":"Travel velocity in kilometers per hour based on nearest validation event (in time)","format":"float","type":"number"}},"type":"object"},"geoPosition":{"description":"Geographical position (WGS84 decimal)","properties":{"alt":{"description":"Altitude","format":"double","type":"number"},"lat":{"description":"Latitude","format":"double","type":"number"},"long":{"description":"Longitude","format":"double","type":"number"}},"required":["lat","long"],"type":"object"},"hinderedStatus":{"description":"Hindered status","properties":{"hindered":{"description":"True if traveller was hindered to use the ticket services","type":"boolean"},"hinderedCause":{"description":"Type of cause","enum":["travellerHindered","operatorHindered","forceMajeure"],"type":"string"},"refundableAmount":{"$ref":"#/definitions/fare","description":"Refundable fare (optional)"}},"required":["hindered","hinderedCause"],"type":"object"},"inspectionReport":{"items":{"$ref":"#/definitions/ticketEvent"},"type":"array"},"jwkPublic":{"description":"Public JSON Web Key (RFC 7517)","properties":{"crv":{"description":"Curve type (required for kty=EC)","example":"P-256","type":"string"},"e":{"description":"RSA exponent parameter (required for kty=RSA)","format":"byte","type":"string"},"kid":{"description":"JWK key identifier","example":"k2","type":"string"},"kty":{"description":"JWA key type","enum":["RSA","EC"],"example":"EC","type":"string"},"n":{"description":"RSA modulus parameter (required for kty=RSA)","format":"byte","type":"string"},"x":{"description":"EC x coordinate (required for kty=EC)","example":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU","format":"byte","type":"string"},"y":{"description":"EC y coordinate (required for kty=EC)","example":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0","format":"byte","type":"string"}},"required":["kty","kid"],"type":"object"},"manifestCall":{"description":"Manifest with parameter to be used for issuing tickets","properties":{"bookingId":{"description":"Booking identifier from Booking API","type":"string"},"issueMtb":{"description":"Set to true to return MTB when tickets are issued","type":"boolean"},"manifestMtbTemplate":{"description":"Signed manifest with MTB template","format":"base64url","type":"string"},"recoverTicketId":{"description":"ID of ticket in recover state to be recovered in operation","type":"string"},"requestId":{"description":"Request identifier allocated by manifest requestor","type":"string"},"startOfValidity":{"description":"Request start of validity set in the future (must be within the validity time of the manifest). Time stamp in ISO 8601 format.","format":"date-time","type":"string"},"ticketHolder":{"$ref":"#/definitions/ticketHolder","description":"Traveller to register as ticket holder"},"tokenIssuer":{"description":"PID of token issuer","format":"int64","type":"integer"},"tokenPublicKey":{"$ref":"#/definitions/jwkPublic"}},"required":["manifestMtbTemplate"],"type":"object"},"mtbReference":{"description":"MTB reference","properties":{"issuerSignature":{"description":"MTB issuer signature","format":"base64url","type":"string"},"pid":{"description":"Participant identifier","format":"int64","type":"integer"}},"required":["pid","issuerSignature"],"type":"object"},"recoverStatus":{"description":"Recover status","properties":{"recovered":{"description":"True if ticket is in recovered state","type":"boolean"},"recoveredAmount":{"$ref":"#/definitions/fare","description":"Fare recovered"}},"required":["recovered"],"type":"object"},"recoverableStatus":{"description":"Tells if ticket is recoverable and amount recoverable","properties":{"recoverable":{"description":"Is ticket recoverable","type":"boolean"},"recoverableAmount":{"$ref":"#/definitions/fare","description":"Recovereable fare"}},"required":["recoverable"],"type":"object"},"refundStatus":{"description":"Refund status","properties":{"refunded":{"description":"True if ticket is in refunded state","type":"boolean"},"refundedAmount":{"$ref":"#/definitions/fare","description":"Fare refunded"}},"required":["refunded"],"type":"object"},"refundableStatus":{"description":"Tells if ticket is refundable and amount refundable","properties":{"refundable":{"description":"Is ticket refundable","type":"boolean"},"refundableAmount":{"$ref":"#/definitions/fare","description":"Refundable fare"}},"required":["refundable"],"type":"object"},"ticket":{"description":"Ticket data and status","properties":{"activeStatus":{"$ref":"#/definitions/ticketActiveStatus","description":"Ticket active status"},"hinderedStatus":{"$ref":"#/definitions/hinderedStatus","description":"Ticket hindered status"},"issuedAt":{"description":"Time stamp in ISO 8601 format","format":"date-time","type":"string"},"mtb":{"description":"Signed MTB container","format":"base64url","type":"string"},"recoverStatus":{"$ref":"#/definitions/recoverStatus","description":"Ticket recover status"},"refundStatus":{"$ref":"#/definitions/refundStatus","description":"Ticket refund status"},"refundableStatus":{"$ref":"#/definitions/refundableStatus","description":"Ticket refundable status"},"ticketHolder":{"$ref":"#/definitions/ticketHolder","description":"Ticket holder"},"ticketId":{"description":"Unique identifier for ticket","type":"string"},"ticketPayload":{"description":"Ticket payload as base64url encoded JSON","format":"base64url","type":"string"}},"required":["ticketId","issuedAt","ticketPayload"],"type":"object"},"ticketActivationStatus":{"description":"Activation status","properties":{"active":{"description":"True if ticket is active and ready to use, otherwise false.","type":"boolean"},"latestActivation":{"description":"Date and time for latest activation","example":"2020-08-28T14:20:39+00:00","format":"date-time","type":"string"},"latestActivationExpire":{"description":"Date and time for expiration of latest activation","example":"2020-08-29T03:00:00+00:00","format":"date-time","type":"string"},"numberOfActivations":{"description":"Initial value for number of activations\n","example":1,"format":"int64","type":"integer"},"relativeValidity":{"description":"Validity period in ISO 8601 duration format","example":"PT24H","type":"string"},"remainingActivations":{"description":"Remaining number of times the product set can be activated\n","example":1,"format":"int64","type":"integer"}},"required":["active"],"type":"object"},"ticketActiveStatus":{"description":"True if ticket is active and ready to use, otherwise false.","type":"boolean"},"ticketBundle":{"description":"A group of tickets. All tickets must come from the same manifest\nused to issue the tickets.\n","properties":{"manifestId":{"description":"Unique manifest identifier for issued tickets","type":"string"},"mtb":{"description":"Signed MTB container","format":"base64url","type":"string"},"settlementId":{"description":"Unique settlement identifier for tickets in bundle","type":"string"},"ticketBundleId":{"description":"Unique ticket bundle identifier","type":"string"},"ticketIds":{"description":"Array of identifiers to tickets in bundle","items":{"type":"string"},"type":"array"}},"required":["ticketBundleId","mtb"],"type":"object"},"ticketBundleRequest":{"description":"List of ticket identifiers of tickets to be included in ticket bundle","properties":{"ticketIds":{"description":"List ticket identifiers","items":{"type":"string"},"type":"array"},"tokenIssuer":{"description":"PID of token issuer","format":"int64","type":"integer"},"tokenPublicKey":{"$ref":"#/definitions/jwkPublic"}},"required":["ticketIds"],"type":"object"},"ticketEvent":{"description":"Ticket event data from inspection or validator device","properties":{"deviceReference":{"$ref":"#/definitions/deviceReference","description":"Device Reference, unique reference for device that creates device signed tickets"},"emvTransaction":{"$ref":"#/definitions/emvTransaction"},"eventId":{"description":"Event identifier (allocated at event creation)","type":"string"},"eventReason":{"description":"Reason for failure/success","type":"string"},"eventResult":{"description":"0 = success\n1 = other failure\n2 = failed spatial constraints\n3 = failed time constraints\n4 = failed device header conditions\n5 = failed issuer signature validation\n6 = failed device signature validation\n7 = failed blacklist check\n8 = failed passback check\n9 = failed fraud check\n","enum":[0,1,2,3,4,5,6,7,8,9],"title":"Result code","type":"integer"},"eventType":{"description":"Type of event, inspection or validation","enum":["inspection","validation"],"type":"string"},"geo":{"$ref":"#/definitions/geoPosition","description":"Geographical position (WGS84 decimal)"},"inspector":{"properties":{"inspectorId":{"description":"What inspector originated the event","type":"string"}},"type":"object"},"localEventId":{"description":"Event identifier (allocated at validation/inspection)","type":"string"},"modeOfTransport":{"description":"Mode of transport. Ex. bus, train or tram.","type":"string"},"mtbReference":{"$ref":"#/definitions/mtbReference","description":"MTB reference"},"operatingDayDate":{"description":"Date of the operating day","format":"date","type":"string"},"service":{"description":"Service information","properties":{"blockId":{"description":"Block identifier","type":"string"},"pid":{"description":"Participant identifier associated with service, trip and block","format":"int64","type":"integer"},"serviceId":{"description":"Service identifier","type":"string"},"tripId":{"description":"Trip identifier","type":"string"}},"required":["pid","serviceId"],"type":"object"},"stopArea":{"description":"Stop area information","properties":{"nextStopAreaId":{"description":"Identifier for next stop area","type":"string"},"pid":{"description":"Participant identifier associated with stop area","format":"int64","type":"integer"},"stopAreaId":{"description":"Identifier for current stop area","type":"string"}},"required":["pid","stopAreaId"],"type":"object"},"ticketId":{"description":"Unique identifier for ticket","type":"string"},"time":{"description":"Time stamp in ISO 8601 format","format":"date-time","type":"string"},"tokenTransaction":{"$ref":"#/definitions/tokenTransaction"},"validator":{"properties":{"location":{"description":"Where is validator mounted (vehicle, platform, camel)","type":"string"},"sublocation":{"description":"More specific location information (e.g., door)","type":"string"},"validatorId":{"description":"What validator originated the event","type":"string"}},"type":"object"},"zone":{"description":"Zone information","properties":{"pid":{"description":"Participant identifier associated with zone","format":"int64","type":"integer"},"zoneId":{"description":"Zone identifier","type":"string"}},"required":["pid","zoneId"],"type":"object"}},"required":["time","ticketId"],"type":"object"},"ticketEventResult":{"description":"The result of a ticket inspection or validation operation registration\n","properties":{"ticketActivationStatus":{"$ref":"#/definitions/ticketActivationStatus"},"ticketEvent":{"$ref":"#/definitions/ticketEvent"},"ticketEventInspectMessage":{"description":"Message to be presented to inspector when registering an inspection event\n","type":"string"},"ticketEventPassengerMessage":{"description":"Message to be presented to passenger when registering an inspection\nor validation event.\n","type":"string"},"ticketEventStatus":{"description":"Status code for inspection or validation event\n","format":"int32","type":"integer"},"ticketMetadata":{"$ref":"#/definitions/ticketMetadata"}},"type":"object"},"ticketHolder":{"description":"Ticket holders name and identifier","properties":{"travellerId":{"description":"Unique traveller identifier","type":"string"},"travellerName":{"description":"Display name of traveller","type":"string"}},"required":["travellerId"],"type":"object"},"ticketIssueResponse":{"properties":{"settlementId":{"description":"Unique settlement identifier for issued tickets","type":"string"},"ticketBundle":{"$ref":"#/definitions/ticketBundle"},"ticketIds":{"description":"Array of identifiers to issued tickets","items":{"type":"string"},"type":"array"}},"required":["ticketIds","settlementId"],"type":"object"},"ticketMetadata":{"description":"Metadata associated with a ticket","properties":{"relativeValidityStart":{"description":"Start of ticket validity period in ISO 8601 format","format":"date-time","type":"string"},"ticketEventIds":{"description":"List of all event identifiers associated with this ticket","items":{"type":"string"},"type":"array"},"travellerPhotoURL":{"description":"URL to photo of traveller","type":"string"}},"type":"object"},"tickleMacro":{"properties":{"condition":{"type":"string"},"description":{"type":"string"},"name":{"type":"string"}},"required":["name","condition"],"type":"object"},"tickleMacros":{"properties":{"macros":{"items":{"$ref":"#/definitions/tickleMacro"},"type":"array"},"pid":{"format":"int64","type":"integer"},"serial":{"format":"int64","type":"integer"}},"required":["pid","serial","macros"],"type":"object"},"tokenTransaction":{"properties":{"aiData":{"$ref":"#/definitions/aiData"},"aiRequest":{"$ref":"#/definitions/aiRequest"},"aiResponse":{"$ref":"#/definitions/aiResponse"},"tpk":{"$ref":"#/definitions/jwkPublic"}},"required":["tpk","aiData","aiRequest","aiResponse"],"type":"object"},"validationReport":{"items":{"$ref":"#/definitions/ticketEvent"},"type":"array"},"whitelist":{"items":{"$ref":"#/definitions/whitelistEntry"},"type":"array"},"whitelistEntry":{"properties":{"id":{"description":"Ever increasing whitelist entry identifier","format":"int64","type":"integer"},"kid":{"description":"Whitelisted token public key thumbprint","type":"string"},"mtb":{"description":"Signed MTB container","format":"base64url","type":"string"},"priority":{"description":"MTB priority (lower is better)","format":"int64","type":"integer"},"val":{"description":"Entry validity period (ISO 8601 time interval in start/end or start/duration format)","type":"string"}},"required":["id","kid","mtb","val"],"type":"object"}},"host":"schemas.mobileticket.se","info":{"title":"BoB Ticket/Validation/Inspection API","version":"v1"},"paths":{"/blacklist":{"get":{"description":"Blacklists are used, as the name indicates, to block certain\nelements (tickets, travellers or tokens) from an otherwise\nsuccessful validation. The current ticket/token/traveller\nblacklist is provided via the getBlacklist call. Only\nblacklist entries added since the provided blacklistEntryId\nwill be returned. There's no guarantee that the entries will\nbe provided in consecutive order nor that no blacklistEntryId\nwill be skipped. Blacklist entries may contain an expire\nproperty. Expired entries may be discarded/ignored by the caller.\n","operationId":"bobcat_ticketing.validate_controller.get_blacklist","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Get blacklist entries added after blacklistEntryId","format":"int64","in":"query","name":"blacklistEntryId","required":true,"type":"integer"}],"produces":["application/json"],"responses":{"200":{"description":"ok","schema":{"$ref":"#/definitions/blacklist"}},"401":{"description":"unauthorised"},"404":{"description":"blacklist not found"}},"summary":"Get blacklist","tags":["blacklist"]}},"/fraudcheck":{"get":{"description":"The fraudcheck call results in a velocity calculated as follows:\n- The caller provides a reference to a MTB, a time and\n  geographical position\n- The callee looks up the time and geographical position of the\n  last ticket event for the given MTB\n- The callee returns the calculated velocity given the time/geopos\nThe response must only be given once per validation event and client.\nVelocity less than km/h or distances less than 1 km shall render 0 km/h.\nThe resulting velocity is used to determine possible fraud. If the\nvelocity is higher than any available mode of transportation, the\nticket has most likely been copied and presented at different locations.\n","operationId":"bobcat_ticketing.validate_controller.fraud_check","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Validated MTB, time and position","in":"body","name":"fraudcheckData","required":true,"schema":{"$ref":"#/definitions/fraudcheckData"}}],"produces":["application/json"],"responses":{"200":{"description":"ok","schema":{"$ref":"#/definitions/fraudcheckResponse"}},"401":{"description":"unauthorised"},"403":{"description":"forbidden"},"501":{"description":"not implemented"}},"summary":"Get time and distance delta of last validation event","tags":["fraudcheck"]}},"/healthcheck":{"get":{"operationId":"bobcat_ticketing.healthcheck_controller.healthcheck","produces":["application/json"],"responses":{"200":{"description":"successful operation"}},"summary":"API healthcheck"}},"/inspection":{"post":{"consumes":["application/json"],"description":"Already performed offline inspections may be submitted in batch via\nreportValidations. The entire batch must be accepted/rejected \u2013 there's\nno status reporting on individual events. Online validation is not\nsupported.\n","operationId":"bobcat_ticketing.inspect_controller.report_inspections","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Inspection report","in":"body","name":"inspectionReport","required":true,"schema":{"$ref":"#/definitions/inspectionReport"}}],"produces":["application/json"],"responses":{"200":{"description":"successful operation"},"401":{"description":"unauthorised"}},"summary":"Report already performed inspections","tags":["inspection"]}},"/inspection/{ticketId}":{"post":{"consumes":["application/json"],"description":"Inspect ticket by Ticket ID and return a reference to a ticket event.\nOnline inspection  - If an eventResult is not provided, the result of\n                     the inspection is not known and the server is\n                     requested to perform validation. In this case, the\n                     entire MTB must be submitted via a query parameter.\nOffline inspection - If an eventResult is provided, the result of the\n                     inspection is known and the server does not have to\n                     perform validation. In this case, the entire MTB\n                     does not need to be submitted via a query\n                     parameter.\n","operationId":"bobcat_ticketing.inspect_controller.inspect_ticket","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket Identifier","format":"string","in":"path","name":"ticketId","required":true,"type":"string"},{"description":"Inspection event","in":"body","name":"inspectionEvent","required":true,"schema":{"$ref":"#/definitions/ticketEvent"}},{"description":"MTB","format":"base64url","in":"query","name":"mtb","required":false,"type":"string"}],"produces":["application/json"],"responses":{"201":{"description":"created","headers":{"location":{"description":"URI of the new ticketEvent","type":"string"}},"schema":{"$ref":"#/definitions/ticketEventResult"}},"401":{"description":"unauthorised"},"404":{"description":"ticket not found"}},"summary":"Inspect ticket by Ticket ID","tags":["inspection"]}},"/ticket":{"get":{"description":"Get all issued tickets that meets the requirements specified by the\nparameters. Which parameters you can filter on are described below.\n","operationId":"bobcat_ticketing.ticket_controller.get_tickets","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Filter on participant ID requesting the ticket","format":"int64","in":"query","name":"pid","required":false,"type":"integer"},{"description":"Filter on request ID","in":"query","name":"requestId","required":false,"type":"string"},{"description":"Filter on travellers ID","in":"query","name":"travellerId","required":false,"type":"string"},{"description":"Filter on token ID","in":"query","name":"tokenId","required":false,"type":"string"},{"description":"Filter on active tickets","in":"query","name":"active","required":false,"type":"boolean"},{"description":"Filter on refunded tickets","in":"query","name":"refunded","required":false,"type":"boolean"},{"description":"Filter on refundable tickets","in":"query","name":"refundable","required":false,"type":"boolean"},{"description":"Filter on hindered tickets","in":"query","name":"hindered","required":false,"type":"boolean"}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation, return list of tickets. If filter doesn't\nproduce any matches an empty array will be returned.\n","schema":{"items":{"$ref":"#/definitions/ticket"},"type":"array"}},"401":{"description":"Unauthorised"}},"summary":"Get issued tickets","tags":["ticket"]},"post":{"description":"Issue tickets from supplied manifest. The manifest should come from the\nproduct server for a matching participant id. Manifests from an unknown\nparticipants, expired manifest or with an illegal signature will be\nrejected.\n","operationId":"bobcat_ticketing.ticket_controller.issue_tickets","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Manifest to issue tickets from","in":"body","name":"manifestCall","required":true,"schema":{"$ref":"#/definitions/manifestCall"}}],"produces":["application/json"],"responses":{"201":{"description":"Successful operation, return identifiers for issued tickets","headers":{"location":{"description":"URL of created ticket bundle","type":"string"}},"schema":{"$ref":"#/definitions/ticketIssueResponse"}},"400":{"description":"Manifest is invalid or from unknown participant"},"401":{"description":"Unauthorised"}},"summary":"Issue tickets","tags":["ticket"]}},"/ticket/{ticketId}":{"get":{"description":"Get data and information about ticket with specified ticket identifier,\nissued by this server.\n","operationId":"bobcat_ticketing.ticket_controller.get_ticket","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket identifier","in":"path","name":"ticketId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation","schema":{"$ref":"#/definitions/ticket"}},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Get ticket data and information","tags":["ticket"]}},"/ticket/{ticketId}/active":{"get":{"description":"Get active status for ticket with specified ticket identifier.\n","operationId":"bobcat_ticketing.ticket_controller.get_ticket_active_status","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket id","in":"path","name":"ticketId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation","schema":{"$ref":"#/definitions/ticketActiveStatus"}},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Get ticket active status","tags":["ticket"]},"put":{"description":"Freeze or thaw ticket with specified ticket identifier.\n","operationId":"bobcat_ticketing.ticket_controller.set_ticket_active_status","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket identifier","in":"path","name":"ticketId","required":true,"type":"string"},{"description":"Set to true to thaw ticket, false to freeze. A ticket must be active to be able\nto use it.\n","in":"body","name":"activeStatus","required":true,"schema":{"$ref":"#/definitions/ticketActiveStatus"}}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation, ticket is now inactive"},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Freeze or thaw ticket","tags":["ticket"]}},"/ticket/{ticketId}/event":{"get":{"description":"Get all ticket events for specified ticket identifier. If no\nevents are available an empty list will be returned.\n","operationId":"bobcat_ticketing.ticket_controller.ticket_events","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket identifier","in":"path","name":"ticketId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation, list of all events for specified ticket identifier.","schema":{"items":{"$ref":"#/definitions/ticketEventResult"},"type":"array"}},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Get ticket events","tags":["ticket"]}},"/ticket/{ticketId}/event/{eventId}":{"get":{"description":"Get ticket event specified with event identifier and ticket identifier.\nNote! this is the server event identifier and not the local event identfier.\n","operationId":"bobcat_ticketing.ticket_controller.ticket_event","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket identifier","in":"path","name":"ticketId","required":true,"type":"string"},{"description":"Event identifier","in":"path","name":"eventId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation","schema":{"$ref":"#/definitions/ticketEventResult"}},"401":{"description":"Unauthorised"},"404":{"description":"Ticket and event combination not found"}},"summary":"Get ticket event","tags":["ticket"]}},"/ticket/{ticketId}/hinderedStatus":{"get":{"description":"Get information if ticket specified with ticket identifier has\nhindered status set, e.g. there was a failure carrying out the\nservices of the issued ticket.\n","operationId":"bobcat_ticketing.ticket_controller.get_ticket_hindered_status","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket id","in":"path","name":"ticketId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation","schema":{"$ref":"#/definitions/hinderedStatus"}},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Get ticket hindered status","tags":["ticket"]},"put":{"description":"Set ticket hindered status to indicate the traveller was unable (hindered) to use it.\n","operationId":"bobcat_ticketing.ticket_controller.set_ticket_hindered_status","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket id","in":"path","name":"ticketId","required":true,"type":"string"},{"description":"Type of hindered status","in":"body","name":"hinderedStatus","required":true,"schema":{"$ref":"#/definitions/hinderedStatus"}}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation, ticket hindered status set"},"400":{"description":"Ticket hindered status could not be set"},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Set ticket hindered","tags":["ticket"]}},"/ticket/{ticketId}/recoverStatus":{"get":{"operationId":"bobcat_ticketing.ticket_controller.get_ticket_recover_status","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket identifier","in":"path","name":"ticketId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"successful operation","schema":{"$ref":"#/definitions/recoverStatus"}},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Get ticket recover status","tags":["ticket"]},"put":{"description":"Recover ticket specified with ticket identifier.\n","operationId":"bobcat_ticketing.ticket_controller.set_ticket_recover_status","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket id","in":"path","name":"ticketId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation, ticket recovered"},"400":{"description":"Ticket could not be recovered"},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Recover ticket","tags":["ticket"]}},"/ticket/{ticketId}/recoverableStatus":{"get":{"description":"Get information if ticket specified with ticket identifier is\nrecoverable. If ticket is refundable also supply information\nabout recoverable amount and VAT.\n","operationId":"bobcat_ticketing.ticket_controller.get_ticket_recoverable_status","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket identifier","in":"path","name":"ticketId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"successful operation","schema":{"$ref":"#/definitions/recoverableStatus"}},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Get ticket recoverable status","tags":["ticket"]}},"/ticket/{ticketId}/refundStatus":{"get":{"description":"Get information if ticket specified with ticket identifier has\nbeen refunded or not. If ticket was refunded also supply information\nabout refunded amount and VAT.\n","operationId":"bobcat_ticketing.ticket_controller.get_ticket_refund_status","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket id","in":"path","name":"ticketId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation","schema":{"$ref":"#/definitions/refundStatus"}},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Get ticket refund status","tags":["ticket"]},"put":{"description":"Refund ticket specified with ticket identifier.\n","operationId":"bobcat_ticketing.ticket_controller.set_ticket_refund_status","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket id","in":"path","name":"ticketId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation, ticket was refunded"},"400":{"description":"Ticket could not be refunded"},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Refund ticket","tags":["ticket"]}},"/ticket/{ticketId}/refundableStatus":{"get":{"description":"Get information if ticket specified with ticket identifier is\nrefundable. If ticket is refundable also supply information\nabout refundable amount and VAT.\n","operationId":"bobcat_ticketing.ticket_controller.get_ticket_refundable_status","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket id","in":"path","name":"ticketId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"successful operation","schema":{"$ref":"#/definitions/refundableStatus"}},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Get ticket refundable status","tags":["ticket"]}},"/ticket/{ticketId}/revoke":{"put":{"description":"Set the ticket specified with ticket identifier in revoked state.\nWhen a ticket is in revoked state it can.\n","operationId":"bobcat_ticketing.ticket_controller.set_ticket_revoke_status","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket identifier","in":"path","name":"ticketId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation, ticket in revoved state."},"401":{"description":"Unauthorised"},"404":{"description":"Ticket not found"}},"summary":"Revoke ticket","tags":["ticket"]}},"/ticketbundle":{"post":{"description":"Create a new ticket bundle containing that is a subset of another ticket bundle.\nThe tickets are specified in the request payload as a list of ticket identfiers.\n","operationId":"bobcat_ticketing.ticket_controller.create_ticket_bundle","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"List of ticket identifiers of tickets to be included in ticket bundle","in":"body","name":"ticketBundleRequest","required":true,"schema":{"$ref":"#/definitions/ticketBundleRequest"}}],"produces":["application/json"],"responses":{"201":{"description":"Successful operation","headers":{"location":{"description":"URL of created ticket bundle","type":"string"}},"schema":{"$ref":"#/definitions/ticketBundle"}},"400":{"description":"All the ticket didn't come from the same ticket bundle"},"401":{"description":"Unauthorised"}},"summary":"Create new ticket bundle","tags":["ticket"]}},"/ticketbundle/{ticketBundleId}":{"get":{"description":"Get ticket bundle specified by the ticket bundle identifier","operationId":"bobcat_ticketing.ticket_controller.get_ticket_bundle","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket bundle id","in":"path","name":"ticketBundleId","required":true,"type":"string"}],"produces":["application/json"],"responses":{"200":{"description":"Successful operation","schema":{"$ref":"#/definitions/ticketBundle"}},"401":{"description":"Unauthorised"},"404":{"description":"Ticket bundle not found"}},"summary":"Get ticket bundle","tags":["ticket"]}},"/ticklemacros":{"get":{"description":"All currently in use TICKLE macro sets are provided via the\ngetAllTickleMacrosets call for offline validation. There's no\nexpire mechanism and validators are expected to update macros\nperiodically.\n","operationId":"bobcat_ticketing.validate_controller.get_all_tickle_macros","produces":["application/json"],"responses":{"200":{"description":"ok","schema":{"items":{"$ref":"#/definitions/tickleMacros"},"type":"array"}},"404":{"description":"No TICKLE macros defined"}},"summary":"Get all TICKLE macro sets","tags":["validation"]}},"/ticklemacros/{serial}":{"get":{"description":"Get a specific TICKLE macro set for offline validation. There's\nno expire mechanism and validators are expected to update macros\nperiodically.\n","operationId":"bobcat_ticketing.validate_controller.get_tickle_macros","parameters":[{"description":"Get macros with the specified serial number","format":"int64","in":"path","name":"serial","required":true,"type":"integer"}],"produces":["application/json"],"responses":{"200":{"description":"ok","schema":{"$ref":"#/definitions/tickleMacros"}},"404":{"description":"TICKLE macro not found"}},"summary":"Get TICKLE macros set","tags":["validation"]}},"/validation":{"post":{"consumes":["application/json"],"description":"Already performed offline validations may be submitted in batch via\nvalidationReport. The entire batch must be accepted/rejected \ufffd there's\nno status reporting on individual events. Online validation is not\nsupported.\n","operationId":"bobcat_ticketing.validate_controller.report_validations","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Validation report","in":"body","name":"validationReport","required":true,"schema":{"$ref":"#/definitions/validationReport"}}],"produces":["application/json"],"responses":{"200":{"description":"successful operation"},"401":{"description":"unauthorised"}},"summary":"Report already performed validations","tags":["validation"]}},"/validation/{ticketId}":{"post":{"consumes":["application/json"],"description":"Validate ticket by Ticket ID and return a reference to a ticket event.\nOnline validation  - If an eventResult is not provided, the result of\n                     the validation is not known and the server is\n                     requested to perform validation. In this case, the\n                     entire MTB must be submitted via a query parameter.\nOffline validation - If an eventResult is provided, the result of the\n                     validation is known and the server does not have to\n                     perform validation. In this case, the entire MTB\n                     does not need to be submitted via a query\n                     parameter.\n","operationId":"bobcat_ticketing.validate_controller.validate_ticket","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Ticket Identifier","format":"string","in":"path","name":"ticketId","required":true,"type":"string"},{"description":"Validation event","in":"body","name":"validationEvent","required":true,"schema":{"$ref":"#/definitions/ticketEvent"}},{"description":"MTB","format":"base64url","in":"query","name":"mtb","required":false,"type":"string"}],"produces":["application/json"],"responses":{"201":{"description":"created","headers":{"location":{"description":"URI of the new ticketEvent","type":"string"}},"schema":{"$ref":"#/definitions/ticketEventResult"}},"401":{"description":"unauthorised"},"404":{"description":"ticket not found"}},"summary":"Validate ticket by Ticket ID","tags":["validation"]}},"/whitelist":{"get":{"description":"The whitelist is a mechamism used with ID-based travelling\nwhere the travel entitlements tied to a certain token is\ndistriubuted to the validating devices. The purpose of the\nwhitelist function is to account for situations where online\nchecks are unreliable. By having the validating devices\nlooking up travel entitlements locally from the whitelist,\nvalidation can be performed reliably and securely even in\noffline scenarios or when connections to the validation\nendpoint is slow. Each whitelist entry contains the ticket\ninformation required to perform the same validation as had\nthe ticket information been conveyed through the MTB.\n","operationId":"bobcat_ticketing.validate_controller.get_whitelist","parameters":[{"description":"JWT authentication token","in":"header","name":"X-BoB-AuthToken","required":true,"type":"string"},{"description":"Get whitelist entries added after whitelistEntryId","format":"int64","in":"query","name":"whitelistEntryId","required":true,"type":"integer"}],"produces":["application/json"],"responses":{"200":{"description":"ok","schema":{"$ref":"#/definitions/whitelist"}},"401":{"description":"unauthorised"},"404":{"description":"whitelist not found"}},"summary":"Get whitelist","tags":["whitelist"]}}},"schemes":["https"],"swagger":"2.0"}
+{
+  "basePath": "/api/v1",
+  "definitions": {
+    "aiData": {
+      "description": "Data used to produce Authentication input for token authentication",
+      "properties": {
+        "aid": {
+          "description": "Full AID (in lowercase hex) as read from the PICC",
+          "type": "string"
+        },
+        "loc": {
+          "description": "Current geographical location of the terminal (WGS84 decimal tuple)",
+          "pattern": "^\\-?[0-9]*(\\.[0-9]+)?,\\-?[0-9]*(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "pid": {
+          "description": "Terminal Participant Identifier",
+          "format": "int64",
+          "type": "integer"
+        },
+        "signatureCounter": {
+          "description": "Signature counter as read from the PICC",
+          "format": "int64",
+          "type": "integer"
+        },
+        "terminalId": {
+          "description": "Identifier of the terminal",
+          "type": "string"
+        },
+        "time": {
+          "description": "Current time as ISO 8601:2004 profile extended format (MTS8, chapter 2.3)",
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": ["time", "terminalId"],
+      "type": "object"
+    },
+    "aiRequest": {
+      "description": "Authentication request as sent to the PICC",
+      "format": "base64url",
+      "type": "string"
+    },
+    "aiResponse": {
+      "description": "Authentication response as received from PICC",
+      "format": "base64url",
+      "type": "string"
+    },
+    "blacklist": {
+      "items": { "$ref": "#/definitions/blacklistEntry" },
+      "type": "array"
+    },
+    "blacklistEntry": {
+      "properties": {
+        "blacklistEntryId": {
+          "description": "Ever increasing blacklist entry identifier",
+          "format": "int64",
+          "type": "integer"
+        },
+        "expire": {
+          "description": "Expire time stamp in ISO 8601 format",
+          "format": "date-time",
+          "type": "string"
+        },
+        "ticketId": { "type": "string" },
+        "tokenId": { "type": "string" },
+        "travellerId": { "type": "string" }
+      },
+      "required": ["blacklistEntryId"],
+      "type": "object"
+    },
+    "deviceReference": {
+      "description": "Device Reference, unique reference for device that creates device signed tickets",
+      "properties": {
+        "did": {
+          "description": "Device identifier",
+          "format": "base64url",
+          "type": "string"
+        },
+        "pid": {
+          "description": "Participant identifier",
+          "format": "int64",
+          "type": "integer"
+        }
+      },
+      "required": ["pid", "did"],
+      "type": "object"
+    },
+    "emvTransaction": {
+      "description": "Contactless payment card (EMV) transaction information",
+      "properties": {
+        "aid": {
+          "description": "Application Identifier",
+          "example": "A0000008381010",
+          "pattern": "^[0-9A-Fa-f]{10,32}$",
+          "type": "string"
+        },
+        "closed": { "description": "Card is closed loop", "type": "boolean" },
+        "deviceId": {
+          "description": "Device (terminal) identifier",
+          "example": "2EF23D68-F810-4BC2-82E6-C17795D48F60",
+          "type": "string"
+        },
+        "deviceTransactionId": {
+          "description": "Device (terminal) transaction identifier",
+          "example": "7997D984-7164-4BC3-9B0F-D4F575F6780F",
+          "type": "string"
+        },
+        "tokenId": {
+          "description": "Token identifier:\n- MTS7: Token JWK fingerprint (per RFC 7638)\n- EMV: base64url-encoded SHA-256 of the ICC Public Key Certificate (EMV tag 9F46)\n",
+          "type": "string"
+        },
+        "transactionId": {
+          "description": "Payment transaction identifier",
+          "example": "4B3249E2-EFFD-4C42-B604-D632C58E46FC",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "fare": {
+      "description": "Fare information, amount, currency and VAT",
+      "properties": {
+        "amount": {
+          "description": "Fare cost excluding VAT",
+          "format": "float",
+          "type": "number"
+        },
+        "currency": {
+          "description": "Currency code (ISO 4217)",
+          "type": "string"
+        },
+        "vatAmount": {
+          "description": "VAT amount",
+          "format": "float",
+          "type": "number"
+        },
+        "vatPercent": {
+          "description": "VAT percent",
+          "format": "float",
+          "type": "number"
+        }
+      },
+      "required": ["amount", "currency", "vatAmount", "vatPercent"],
+      "type": "object"
+    },
+    "fraudcheckData": {
+      "description": "N.B. - fraud check data MUST NOT be retained by respondent",
+      "properties": {
+        "geo": { "$ref": "#/definitions/geoPosition" },
+        "mtbReference": { "$ref": "#/definitions/mtbReference" },
+        "time": {
+          "description": "Time stamp in ISO 8601 format",
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "fraudcheckResponse": {
+      "description": "N.B. - response MUST only be given once per validation event and client. Velocity <= 5 km/h or distance <= 1 km shall render 0 km/h.",
+      "properties": {
+        "velocity": {
+          "description": "Travel velocity in kilometers per hour based on nearest validation event (in time)",
+          "format": "float",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "geoPosition": {
+      "description": "Geographical position (WGS84 decimal)",
+      "properties": {
+        "alt": {
+          "description": "Altitude",
+          "format": "double",
+          "type": "number"
+        },
+        "lat": {
+          "description": "Latitude",
+          "format": "double",
+          "type": "number"
+        },
+        "long": {
+          "description": "Longitude",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": ["lat", "long"],
+      "type": "object"
+    },
+    "hinderedStatus": {
+      "description": "Hindered status",
+      "properties": {
+        "hindered": {
+          "description": "True if traveller was hindered to use the ticket services",
+          "type": "boolean"
+        },
+        "hinderedCause": {
+          "description": "Type of cause",
+          "enum": ["travellerHindered", "operatorHindered", "forceMajeure"],
+          "type": "string"
+        },
+        "refundableAmount": {
+          "$ref": "#/definitions/fare",
+          "description": "Refundable fare (optional)"
+        }
+      },
+      "required": ["hindered", "hinderedCause"],
+      "type": "object"
+    },
+    "inspectionReport": {
+      "items": { "$ref": "#/definitions/ticketEvent" },
+      "type": "array"
+    },
+    "jwkPublic": {
+      "description": "Public JSON Web Key (RFC 7517)",
+      "properties": {
+        "crv": {
+          "description": "Curve type (required for kty=EC)",
+          "example": "P-256",
+          "type": "string"
+        },
+        "e": {
+          "description": "RSA exponent parameter (required for kty=RSA)",
+          "format": "byte",
+          "type": "string"
+        },
+        "kid": {
+          "description": "JWK key identifier",
+          "example": "k2",
+          "type": "string"
+        },
+        "kty": {
+          "description": "JWA key type",
+          "enum": ["RSA", "EC"],
+          "example": "EC",
+          "type": "string"
+        },
+        "n": {
+          "description": "RSA modulus parameter (required for kty=RSA)",
+          "format": "byte",
+          "type": "string"
+        },
+        "x": {
+          "description": "EC x coordinate (required for kty=EC)",
+          "example": "f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",
+          "format": "byte",
+          "type": "string"
+        },
+        "y": {
+          "description": "EC y coordinate (required for kty=EC)",
+          "example": "x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0",
+          "format": "byte",
+          "type": "string"
+        }
+      },
+      "required": ["kty", "kid"],
+      "type": "object"
+    },
+    "manifestCall": {
+      "description": "Manifest with parameter to be used for issuing tickets",
+      "properties": {
+        "bookingId": {
+          "description": "Booking identifier from Booking API",
+          "type": "string"
+        },
+        "issueMtb": {
+          "description": "Set to true to return MTB when tickets are issued",
+          "type": "boolean"
+        },
+        "manifestMtbTemplate": {
+          "description": "Signed manifest with MTB template",
+          "format": "base64url",
+          "type": "string"
+        },
+        "recoverTicketId": {
+          "description": "ID of ticket in recover state to be recovered in operation",
+          "type": "string"
+        },
+        "requestId": {
+          "description": "Request identifier allocated by manifest requestor",
+          "type": "string"
+        },
+        "startOfValidity": {
+          "description": "Request start of validity set in the future (must be within the validity time of the manifest). Time stamp in ISO 8601 format.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "ticketHolder": {
+          "$ref": "#/definitions/ticketHolder",
+          "description": "Traveller to register as ticket holder"
+        },
+        "tokenIssuer": {
+          "description": "PID of token issuer",
+          "format": "int64",
+          "type": "integer"
+        },
+        "tokenPublicKey": { "$ref": "#/definitions/jwkPublic" }
+      },
+      "required": ["manifestMtbTemplate"],
+      "type": "object"
+    },
+    "mtbReference": {
+      "description": "MTB reference",
+      "properties": {
+        "issuerSignature": {
+          "description": "MTB issuer signature",
+          "format": "base64url",
+          "type": "string"
+        },
+        "pid": {
+          "description": "Participant identifier",
+          "format": "int64",
+          "type": "integer"
+        }
+      },
+      "required": ["pid", "issuerSignature"],
+      "type": "object"
+    },
+    "recoverStatus": {
+      "description": "Recover status",
+      "properties": {
+        "recovered": {
+          "description": "True if ticket is in recovered state",
+          "type": "boolean"
+        },
+        "recoveredAmount": {
+          "$ref": "#/definitions/fare",
+          "description": "Fare recovered"
+        }
+      },
+      "required": ["recovered"],
+      "type": "object"
+    },
+    "recoverableStatus": {
+      "description": "Tells if ticket is recoverable and amount recoverable",
+      "properties": {
+        "recoverable": {
+          "description": "Is ticket recoverable",
+          "type": "boolean"
+        },
+        "recoverableAmount": {
+          "$ref": "#/definitions/fare",
+          "description": "Recovereable fare"
+        }
+      },
+      "required": ["recoverable"],
+      "type": "object"
+    },
+    "refundStatus": {
+      "description": "Refund status",
+      "properties": {
+        "refunded": {
+          "description": "True if ticket is in refunded state",
+          "type": "boolean"
+        },
+        "refundedAmount": {
+          "$ref": "#/definitions/fare",
+          "description": "Fare refunded"
+        }
+      },
+      "required": ["refunded"],
+      "type": "object"
+    },
+    "refundableStatus": {
+      "description": "Tells if ticket is refundable and amount refundable",
+      "properties": {
+        "refundable": {
+          "description": "Is ticket refundable",
+          "type": "boolean"
+        },
+        "refundableAmount": {
+          "$ref": "#/definitions/fare",
+          "description": "Refundable fare"
+        }
+      },
+      "required": ["refundable"],
+      "type": "object"
+    },
+    "ticket": {
+      "description": "Ticket data and status",
+      "properties": {
+        "activeStatus": {
+          "$ref": "#/definitions/ticketActiveStatus",
+          "description": "Ticket active status"
+        },
+        "hinderedStatus": {
+          "$ref": "#/definitions/hinderedStatus",
+          "description": "Ticket hindered status"
+        },
+        "issuedAt": {
+          "description": "Time stamp in ISO 8601 format",
+          "format": "date-time",
+          "type": "string"
+        },
+        "mtb": {
+          "description": "Signed MTB container",
+          "format": "base64url",
+          "type": "string"
+        },
+        "recoverStatus": {
+          "$ref": "#/definitions/recoverStatus",
+          "description": "Ticket recover status"
+        },
+        "refundStatus": {
+          "$ref": "#/definitions/refundStatus",
+          "description": "Ticket refund status"
+        },
+        "refundableStatus": {
+          "$ref": "#/definitions/refundableStatus",
+          "description": "Ticket refundable status"
+        },
+        "ticketHolder": {
+          "$ref": "#/definitions/ticketHolder",
+          "description": "Ticket holder"
+        },
+        "ticketId": {
+          "description": "Unique identifier for ticket",
+          "type": "string"
+        },
+        "ticketPayload": {
+          "description": "Ticket payload as base64url encoded JSON",
+          "format": "base64url",
+          "type": "string"
+        }
+      },
+      "required": ["ticketId", "issuedAt", "ticketPayload"],
+      "type": "object"
+    },
+    "ticketActivationStatus": {
+      "description": "Activation status",
+      "properties": {
+        "active": {
+          "description": "True if ticket is active and ready to use, otherwise false.",
+          "type": "boolean"
+        },
+        "latestActivation": {
+          "description": "Date and time for latest activation",
+          "example": "2020-08-28T14:20:39+00:00",
+          "format": "date-time",
+          "type": "string"
+        },
+        "latestActivationExpire": {
+          "description": "Date and time for expiration of latest activation",
+          "example": "2020-08-29T03:00:00+00:00",
+          "format": "date-time",
+          "type": "string"
+        },
+        "numberOfActivations": {
+          "description": "Initial value for number of activations\n",
+          "example": 1,
+          "format": "int64",
+          "type": "integer"
+        },
+        "relativeValidity": {
+          "description": "Validity period in ISO 8601 duration format",
+          "example": "PT24H",
+          "type": "string"
+        },
+        "remainingActivations": {
+          "description": "Remaining number of times the product set can be activated\n",
+          "example": 1,
+          "format": "int64",
+          "type": "integer"
+        }
+      },
+      "required": ["active"],
+      "type": "object"
+    },
+    "ticketActiveStatus": {
+      "description": "True if ticket is active and ready to use, otherwise false.",
+      "type": "boolean"
+    },
+    "ticketBundle": {
+      "description": "A group of tickets. All tickets must come from the same manifest\nused to issue the tickets.\n",
+      "properties": {
+        "manifestId": {
+          "description": "Unique manifest identifier for issued tickets",
+          "type": "string"
+        },
+        "mtb": {
+          "description": "Signed MTB container",
+          "format": "base64url",
+          "type": "string"
+        },
+        "settlementId": {
+          "description": "Unique settlement identifier for tickets in bundle",
+          "type": "string"
+        },
+        "ticketBundleId": {
+          "description": "Unique ticket bundle identifier",
+          "type": "string"
+        },
+        "ticketIds": {
+          "description": "Array of identifiers to tickets in bundle",
+          "items": { "type": "string" },
+          "type": "array"
+        }
+      },
+      "required": ["ticketBundleId", "mtb"],
+      "type": "object"
+    },
+    "ticketBundleRequest": {
+      "description": "List of ticket identifiers of tickets to be included in ticket bundle",
+      "properties": {
+        "ticketIds": {
+          "description": "List ticket identifiers",
+          "items": { "type": "string" },
+          "type": "array"
+        },
+        "tokenIssuer": {
+          "description": "PID of token issuer",
+          "format": "int64",
+          "type": "integer"
+        },
+        "tokenPublicKey": { "$ref": "#/definitions/jwkPublic" }
+      },
+      "required": ["ticketIds"],
+      "type": "object"
+    },
+    "ticketEvent": {
+      "description": "Ticket event data from inspection or validator device",
+      "properties": {
+        "deviceReference": {
+          "$ref": "#/definitions/deviceReference",
+          "description": "Device Reference, unique reference for device that creates device signed tickets"
+        },
+        "emvTransaction": { "$ref": "#/definitions/emvTransaction" },
+        "eventId": {
+          "description": "Event identifier (allocated at event creation)",
+          "type": "string"
+        },
+        "eventReason": {
+          "description": "Reason for failure/success",
+          "type": "string"
+        },
+        "eventResult": {
+          "description": "0 = success\n1 = other failure\n2 = failed spatial constraints\n3 = failed time constraints\n4 = failed device header conditions\n5 = failed issuer signature validation\n6 = failed device signature validation\n7 = failed blacklist check\n8 = failed passback check\n9 = failed fraud check\n",
+          "enum": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+          "title": "Result code",
+          "type": "integer"
+        },
+        "eventType": {
+          "description": "Type of event, inspection or validation",
+          "enum": ["inspection", "validation"],
+          "type": "string"
+        },
+        "geo": {
+          "$ref": "#/definitions/geoPosition",
+          "description": "Geographical position (WGS84 decimal)"
+        },
+        "inspector": {
+          "properties": {
+            "inspectorId": {
+              "description": "What inspector originated the event",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "localEventId": {
+          "description": "Event identifier (allocated at validation/inspection)",
+          "type": "string"
+        },
+        "modeOfTransport": {
+          "description": "Mode of transport. Ex. bus, train or tram.",
+          "type": "string"
+        },
+        "mtbReference": {
+          "$ref": "#/definitions/mtbReference",
+          "description": "MTB reference"
+        },
+        "operatingDayDate": {
+          "description": "Date of the operating day",
+          "format": "date",
+          "type": "string"
+        },
+        "service": {
+          "description": "Service information",
+          "properties": {
+            "blockId": { "description": "Block identifier", "type": "string" },
+            "pid": {
+              "description": "Participant identifier associated with service, trip and block",
+              "format": "int64",
+              "type": "integer"
+            },
+            "serviceId": {
+              "description": "Service identifier",
+              "type": "string"
+            },
+            "tripId": { "description": "Trip identifier", "type": "string" }
+          },
+          "required": ["pid", "serviceId"],
+          "type": "object"
+        },
+        "stopArea": {
+          "description": "Stop area information",
+          "properties": {
+            "nextStopAreaId": {
+              "description": "Identifier for next stop area",
+              "type": "string"
+            },
+            "pid": {
+              "description": "Participant identifier associated with stop area",
+              "format": "int64",
+              "type": "integer"
+            },
+            "stopAreaId": {
+              "description": "Identifier for current stop area",
+              "type": "string"
+            }
+          },
+          "required": ["pid", "stopAreaId"],
+          "type": "object"
+        },
+        "ticketId": {
+          "description": "Unique identifier for ticket",
+          "type": "string"
+        },
+        "time": {
+          "description": "Time stamp in ISO 8601 format",
+          "format": "date-time",
+          "type": "string"
+        },
+        "tokenTransaction": { "$ref": "#/definitions/tokenTransaction" },
+        "validator": {
+          "properties": {
+            "location": {
+              "description": "Where is validator mounted (vehicle, platform, camel)",
+              "type": "string"
+            },
+            "sublocation": {
+              "description": "More specific location information (e.g., door)",
+              "type": "string"
+            },
+            "validatorId": {
+              "description": "What validator originated the event",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "zone": {
+          "description": "Zone information",
+          "properties": {
+            "pid": {
+              "description": "Participant identifier associated with zone",
+              "format": "int64",
+              "type": "integer"
+            },
+            "zoneId": { "description": "Zone identifier", "type": "string" }
+          },
+          "required": ["pid", "zoneId"],
+          "type": "object"
+        }
+      },
+      "required": ["time", "ticketId"],
+      "type": "object"
+    },
+    "ticketEventResult": {
+      "description": "The result of a ticket inspection or validation operation registration\n",
+      "properties": {
+        "ticketActivationStatus": {
+          "$ref": "#/definitions/ticketActivationStatus"
+        },
+        "ticketEvent": { "$ref": "#/definitions/ticketEvent" },
+        "ticketEventInspectMessage": {
+          "description": "Message to be presented to inspector when registering an inspection event\n",
+          "type": "string"
+        },
+        "ticketEventPassengerMessage": {
+          "description": "Message to be presented to passenger when registering an inspection\nor validation event.\n",
+          "type": "string"
+        },
+        "ticketEventStatus": {
+          "description": "Status code for inspection or validation event\n",
+          "format": "int32",
+          "type": "integer"
+        },
+        "ticketMetadata": { "$ref": "#/definitions/ticketMetadata" }
+      },
+      "type": "object"
+    },
+    "ticketHolder": {
+      "description": "Ticket holders name and identifier",
+      "properties": {
+        "travellerId": {
+          "description": "Unique traveller identifier",
+          "type": "string"
+        },
+        "travellerName": {
+          "description": "Display name of traveller",
+          "type": "string"
+        }
+      },
+      "required": ["travellerId"],
+      "type": "object"
+    },
+    "ticketIssueResponse": {
+      "properties": {
+        "settlementId": {
+          "description": "Unique settlement identifier for issued tickets",
+          "type": "string"
+        },
+        "ticketBundle": { "$ref": "#/definitions/ticketBundle" },
+        "ticketIds": {
+          "description": "Array of identifiers to issued tickets",
+          "items": { "type": "string" },
+          "type": "array"
+        }
+      },
+      "required": ["ticketIds", "settlementId"],
+      "type": "object"
+    },
+    "ticketMetadata": {
+      "description": "Metadata associated with a ticket",
+      "properties": {
+        "relativeValidityStart": {
+          "description": "Start of ticket validity period in ISO 8601 format",
+          "format": "date-time",
+          "type": "string"
+        },
+        "ticketEventIds": {
+          "description": "List of all event identifiers associated with this ticket",
+          "items": { "type": "string" },
+          "type": "array"
+        },
+        "travellerPhotoURL": {
+          "description": "URL to photo of traveller",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "tickleMacro": {
+      "properties": {
+        "condition": { "type": "string" },
+        "description": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["name", "condition"],
+      "type": "object"
+    },
+    "tickleMacros": {
+      "properties": {
+        "macros": {
+          "items": { "$ref": "#/definitions/tickleMacro" },
+          "type": "array"
+        },
+        "pid": { "format": "int64", "type": "integer" },
+        "serial": { "format": "int64", "type": "integer" }
+      },
+      "required": ["pid", "serial", "macros"],
+      "type": "object"
+    },
+    "tokenTransaction": {
+      "properties": {
+        "aiData": { "$ref": "#/definitions/aiData" },
+        "aiRequest": { "$ref": "#/definitions/aiRequest" },
+        "aiResponse": { "$ref": "#/definitions/aiResponse" },
+        "tpk": { "$ref": "#/definitions/jwkPublic" }
+      },
+      "required": ["tpk", "aiData", "aiRequest", "aiResponse"],
+      "type": "object"
+    },
+    "validationReport": {
+      "items": { "$ref": "#/definitions/ticketEvent" },
+      "type": "array"
+    },
+    "whitelist": {
+      "items": { "$ref": "#/definitions/whitelistEntry" },
+      "type": "array"
+    },
+    "whitelistEntry": {
+      "properties": {
+        "id": {
+          "description": "Ever increasing whitelist entry identifier",
+          "format": "int64",
+          "type": "integer"
+        },
+        "kid": {
+          "description": "Whitelisted token public key thumbprint",
+          "type": "string"
+        },
+        "mtb": {
+          "description": "Signed MTB container",
+          "format": "base64url",
+          "type": "string"
+        },
+        "priority": {
+          "description": "MTB priority (lower is better)",
+          "format": "int64",
+          "type": "integer"
+        },
+        "val": {
+          "description": "Entry validity period (ISO 8601 time interval in start/end or start/duration format)",
+          "type": "string"
+        }
+      },
+      "required": ["id", "kid", "mtb", "val"],
+      "type": "object"
+    }
+  },
+  "host": "schemas.mobileticket.se",
+  "info": { "title": "BoB Ticket/Validation/Inspection API", "version": "v1" },
+  "paths": {
+    "/blacklist": {
+      "get": {
+        "description": "Blacklists are used, as the name indicates, to block certain\nelements (tickets, travellers or tokens) from an otherwise\nsuccessful validation. The current ticket/token/traveller\nblacklist is provided via the getBlacklist call. Only\nblacklist entries added since the provided blacklistEntryId\nwill be returned. There's no guarantee that the entries will\nbe provided in consecutive order nor that no blacklistEntryId\nwill be skipped. Blacklist entries may contain an expire\nproperty. Expired entries may be discarded/ignored by the caller.\n",
+        "operationId": "bobcat_ticketing.validate_controller.get_blacklist",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Get blacklist entries added after blacklistEntryId",
+            "format": "int64",
+            "in": "query",
+            "name": "blacklistEntryId",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "schema": { "$ref": "#/definitions/blacklist" }
+          },
+          "401": { "description": "unauthorised" },
+          "404": { "description": "blacklist not found" }
+        },
+        "summary": "Get blacklist",
+        "tags": ["blacklist"]
+      }
+    },
+    "/fraudcheck": {
+      "get": {
+        "description": "The fraudcheck call results in a velocity calculated as follows:\n- The caller provides a reference to a MTB, a time and\n  geographical position\n- The callee looks up the time and geographical position of the\n  last ticket event for the given MTB\n- The callee returns the calculated velocity given the time/geopos\nThe response must only be given once per validation event and client.\nVelocity less than km/h or distances less than 1 km shall render 0 km/h.\nThe resulting velocity is used to determine possible fraud. If the\nvelocity is higher than any available mode of transportation, the\nticket has most likely been copied and presented at different locations.\n",
+        "operationId": "bobcat_ticketing.validate_controller.fraud_check",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Validated MTB, time and position",
+            "in": "body",
+            "name": "fraudcheckData",
+            "required": true,
+            "schema": { "$ref": "#/definitions/fraudcheckData" }
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "schema": { "$ref": "#/definitions/fraudcheckResponse" }
+          },
+          "401": { "description": "unauthorised" },
+          "403": { "description": "forbidden" },
+          "501": { "description": "not implemented" }
+        },
+        "summary": "Get time and distance delta of last validation event",
+        "tags": ["fraudcheck"]
+      }
+    },
+    "/healthcheck": {
+      "get": {
+        "operationId": "bobcat_ticketing.healthcheck_controller.healthcheck",
+        "produces": ["application/json"],
+        "responses": { "200": { "description": "successful operation" } },
+        "summary": "API healthcheck"
+      }
+    },
+    "/inspection": {
+      "post": {
+        "consumes": ["application/json"],
+        "description": "Already performed offline inspections may be submitted in batch via\nreportValidations. The entire batch must be accepted/rejected \u2013 there's\nno status reporting on individual events. Online validation is not\nsupported.\n",
+        "operationId": "bobcat_ticketing.inspect_controller.report_inspections",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Inspection report",
+            "in": "body",
+            "name": "inspectionReport",
+            "required": true,
+            "schema": { "$ref": "#/definitions/inspectionReport" }
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": { "description": "successful operation" },
+          "401": { "description": "unauthorised" }
+        },
+        "summary": "Report already performed inspections",
+        "tags": ["inspection"]
+      }
+    },
+    "/inspection/{ticketId}": {
+      "post": {
+        "consumes": ["application/json"],
+        "description": "Inspect ticket by Ticket ID and return a reference to a ticket event.\nOnline inspection  - If an eventResult is not provided, the result of\n                     the inspection is not known and the server is\n                     requested to perform validation. In this case, the\n                     entire MTB must be submitted via a query parameter.\nOffline inspection - If an eventResult is provided, the result of the\n                     inspection is known and the server does not have to\n                     perform validation. In this case, the entire MTB\n                     does not need to be submitted via a query\n                     parameter.\n",
+        "operationId": "bobcat_ticketing.inspect_controller.inspect_ticket",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket Identifier",
+            "format": "string",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Inspection event",
+            "in": "body",
+            "name": "inspectionEvent",
+            "required": true,
+            "schema": { "$ref": "#/definitions/ticketEvent" }
+          },
+          {
+            "description": "MTB",
+            "format": "base64url",
+            "in": "query",
+            "name": "mtb",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "201": {
+            "description": "created",
+            "headers": {
+              "location": {
+                "description": "URI of the new ticketEvent",
+                "type": "string"
+              }
+            },
+            "schema": { "$ref": "#/definitions/ticketEventResult" }
+          },
+          "401": { "description": "unauthorised" },
+          "404": { "description": "ticket not found" }
+        },
+        "summary": "Inspect ticket by Ticket ID",
+        "tags": ["inspection"]
+      }
+    },
+    "/ticket": {
+      "get": {
+        "description": "Get all issued tickets that meets the requirements specified by the\nparameters. Which parameters you can filter on are described below.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.get_tickets",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Filter on participant ID requesting the ticket",
+            "format": "int64",
+            "in": "query",
+            "name": "pid",
+            "required": false,
+            "type": "integer"
+          },
+          {
+            "description": "Filter on request ID",
+            "in": "query",
+            "name": "requestId",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "description": "Filter on travellers ID",
+            "in": "query",
+            "name": "travellerId",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "description": "Filter on token ID",
+            "in": "query",
+            "name": "tokenId",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "description": "Filter on active tickets",
+            "in": "query",
+            "name": "active",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "description": "Filter on refunded tickets",
+            "in": "query",
+            "name": "refunded",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "description": "Filter on refundable tickets",
+            "in": "query",
+            "name": "refundable",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "description": "Filter on hindered tickets",
+            "in": "query",
+            "name": "hindered",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Successful operation, return list of tickets. If filter doesn't\nproduce any matches an empty array will be returned.\n",
+            "schema": {
+              "items": { "$ref": "#/definitions/ticket" },
+              "type": "array"
+            }
+          },
+          "401": { "description": "Unauthorised" }
+        },
+        "summary": "Get issued tickets",
+        "tags": ["ticket"]
+      },
+      "post": {
+        "description": "Issue tickets from supplied manifest. The manifest should come from the\nproduct server for a matching participant id. Manifests from an unknown\nparticipants, expired manifest or with an illegal signature will be\nrejected.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.issue_tickets",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Manifest to issue tickets from",
+            "in": "body",
+            "name": "manifestCall",
+            "required": true,
+            "schema": { "$ref": "#/definitions/manifestCall" }
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "201": {
+            "description": "Successful operation, return identifiers for issued tickets",
+            "headers": {
+              "location": {
+                "description": "URL of created ticket bundle",
+                "type": "string"
+              }
+            },
+            "schema": { "$ref": "#/definitions/ticketIssueResponse" }
+          },
+          "400": {
+            "description": "Manifest is invalid or from unknown participant"
+          },
+          "401": { "description": "Unauthorised" }
+        },
+        "summary": "Issue tickets",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticket/{ticketId}": {
+      "get": {
+        "description": "Get data and information about ticket with specified ticket identifier,\nissued by this server.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.get_ticket",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket identifier",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": { "$ref": "#/definitions/ticket" }
+          },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Get ticket data and information",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticket/{ticketId}/active": {
+      "get": {
+        "description": "Get active status for ticket with specified ticket identifier.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.get_ticket_active_status",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket id",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": { "$ref": "#/definitions/ticketActiveStatus" }
+          },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Get ticket active status",
+        "tags": ["ticket"]
+      },
+      "put": {
+        "description": "Freeze or thaw ticket with specified ticket identifier.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.set_ticket_active_status",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket identifier",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Set to true to thaw ticket, false to freeze. A ticket must be active to be able\nto use it.\n",
+            "in": "body",
+            "name": "activeStatus",
+            "required": true,
+            "schema": { "$ref": "#/definitions/ticketActiveStatus" }
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Successful operation, ticket is now inactive"
+          },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Freeze or thaw ticket",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticket/{ticketId}/event": {
+      "get": {
+        "description": "Get all ticket events for specified ticket identifier. If no\nevents are available an empty list will be returned.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.ticket_events",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket identifier",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Successful operation, list of all events for specified ticket identifier.",
+            "schema": {
+              "items": { "$ref": "#/definitions/ticketEventResult" },
+              "type": "array"
+            }
+          },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Get ticket events",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticket/{ticketId}/event/{eventId}": {
+      "get": {
+        "description": "Get ticket event specified with event identifier and ticket identifier.\nNote! this is the server event identifier and not the local event identfier.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.ticket_event",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket identifier",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Event identifier",
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": { "$ref": "#/definitions/ticketEventResult" }
+          },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket and event combination not found" }
+        },
+        "summary": "Get ticket event",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticket/{ticketId}/hinderedStatus": {
+      "get": {
+        "description": "Get information if ticket specified with ticket identifier has\nhindered status set, e.g. there was a failure carrying out the\nservices of the issued ticket.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.get_ticket_hindered_status",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket id",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": { "$ref": "#/definitions/hinderedStatus" }
+          },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Get ticket hindered status",
+        "tags": ["ticket"]
+      },
+      "put": {
+        "description": "Set ticket hindered status to indicate the traveller was unable (hindered) to use it.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.set_ticket_hindered_status",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket id",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Type of hindered status",
+            "in": "body",
+            "name": "hinderedStatus",
+            "required": true,
+            "schema": { "$ref": "#/definitions/hinderedStatus" }
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Successful operation, ticket hindered status set"
+          },
+          "400": { "description": "Ticket hindered status could not be set" },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Set ticket hindered",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticket/{ticketId}/recoverStatus": {
+      "get": {
+        "operationId": "bobcat_ticketing.ticket_controller.get_ticket_recover_status",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket identifier",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": { "$ref": "#/definitions/recoverStatus" }
+          },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Get ticket recover status",
+        "tags": ["ticket"]
+      },
+      "put": {
+        "description": "Recover ticket specified with ticket identifier.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.set_ticket_recover_status",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket id",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": { "description": "Successful operation, ticket recovered" },
+          "400": { "description": "Ticket could not be recovered" },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Recover ticket",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticket/{ticketId}/recoverableStatus": {
+      "get": {
+        "description": "Get information if ticket specified with ticket identifier is\nrecoverable. If ticket is refundable also supply information\nabout recoverable amount and VAT.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.get_ticket_recoverable_status",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket identifier",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": { "$ref": "#/definitions/recoverableStatus" }
+          },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Get ticket recoverable status",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticket/{ticketId}/refundStatus": {
+      "get": {
+        "description": "Get information if ticket specified with ticket identifier has\nbeen refunded or not. If ticket was refunded also supply information\nabout refunded amount and VAT.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.get_ticket_refund_status",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket id",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": { "$ref": "#/definitions/refundStatus" }
+          },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Get ticket refund status",
+        "tags": ["ticket"]
+      },
+      "put": {
+        "description": "Refund ticket specified with ticket identifier.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.set_ticket_refund_status",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket id",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": { "description": "Successful operation, ticket was refunded" },
+          "400": { "description": "Ticket could not be refunded" },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Refund ticket",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticket/{ticketId}/refundableStatus": {
+      "get": {
+        "description": "Get information if ticket specified with ticket identifier is\nrefundable. If ticket is refundable also supply information\nabout refundable amount and VAT.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.get_ticket_refundable_status",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket id",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": { "$ref": "#/definitions/refundableStatus" }
+          },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Get ticket refundable status",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticket/{ticketId}/revoke": {
+      "put": {
+        "description": "Set the ticket specified with ticket identifier in revoked state.\nWhen a ticket is in revoked state it can.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.set_ticket_revoke_status",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket identifier",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Successful operation, ticket in revoved state."
+          },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket not found" }
+        },
+        "summary": "Revoke ticket",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticketbundle": {
+      "post": {
+        "description": "Create a new ticket bundle containing that is a subset of another ticket bundle.\nThe tickets are specified in the request payload as a list of ticket identfiers.\n",
+        "operationId": "bobcat_ticketing.ticket_controller.create_ticket_bundle",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "List of ticket identifiers of tickets to be included in ticket bundle",
+            "in": "body",
+            "name": "ticketBundleRequest",
+            "required": true,
+            "schema": { "$ref": "#/definitions/ticketBundleRequest" }
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "201": {
+            "description": "Successful operation",
+            "headers": {
+              "location": {
+                "description": "URL of created ticket bundle",
+                "type": "string"
+              }
+            },
+            "schema": { "$ref": "#/definitions/ticketBundle" }
+          },
+          "400": {
+            "description": "All the ticket didn't come from the same ticket bundle"
+          },
+          "401": { "description": "Unauthorised" }
+        },
+        "summary": "Create new ticket bundle",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticketbundle/{ticketBundleId}": {
+      "get": {
+        "description": "Get ticket bundle specified by the ticket bundle identifier",
+        "operationId": "bobcat_ticketing.ticket_controller.get_ticket_bundle",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket bundle id",
+            "in": "path",
+            "name": "ticketBundleId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": { "$ref": "#/definitions/ticketBundle" }
+          },
+          "401": { "description": "Unauthorised" },
+          "404": { "description": "Ticket bundle not found" }
+        },
+        "summary": "Get ticket bundle",
+        "tags": ["ticket"]
+      }
+    },
+    "/ticklemacros": {
+      "get": {
+        "description": "All currently in use TICKLE macro sets are provided via the\ngetAllTickleMacrosets call for offline validation. There's no\nexpire mechanism and validators are expected to update macros\nperiodically.\n",
+        "operationId": "bobcat_ticketing.validate_controller.get_all_tickle_macros",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "schema": {
+              "items": { "$ref": "#/definitions/tickleMacros" },
+              "type": "array"
+            }
+          },
+          "404": { "description": "No TICKLE macros defined" }
+        },
+        "summary": "Get all TICKLE macro sets",
+        "tags": ["validation"]
+      }
+    },
+    "/ticklemacros/{serial}": {
+      "get": {
+        "description": "Get a specific TICKLE macro set for offline validation. There's\nno expire mechanism and validators are expected to update macros\nperiodically.\n",
+        "operationId": "bobcat_ticketing.validate_controller.get_tickle_macros",
+        "parameters": [
+          {
+            "description": "Get macros with the specified serial number",
+            "format": "int64",
+            "in": "path",
+            "name": "serial",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "schema": { "$ref": "#/definitions/tickleMacros" }
+          },
+          "404": { "description": "TICKLE macro not found" }
+        },
+        "summary": "Get TICKLE macros set",
+        "tags": ["validation"]
+      }
+    },
+    "/validation": {
+      "post": {
+        "consumes": ["application/json"],
+        "description": "Already performed offline validations may be submitted in batch via\nvalidationReport. The entire batch must be accepted/rejected \ufffd there's\nno status reporting on individual events. Online validation is not\nsupported.\n",
+        "operationId": "bobcat_ticketing.validate_controller.report_validations",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Validation report",
+            "in": "body",
+            "name": "validationReport",
+            "required": true,
+            "schema": { "$ref": "#/definitions/validationReport" }
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": { "description": "successful operation" },
+          "401": { "description": "unauthorised" }
+        },
+        "summary": "Report already performed validations",
+        "tags": ["validation"]
+      }
+    },
+    "/validation/{ticketId}": {
+      "post": {
+        "consumes": ["application/json"],
+        "description": "Validate ticket by Ticket ID and return a reference to a ticket event.\nOnline validation  - If an eventResult is not provided, the result of\n                     the validation is not known and the server is\n                     requested to perform validation. In this case, the\n                     entire MTB must be submitted via a query parameter.\nOffline validation - If an eventResult is provided, the result of the\n                     validation is known and the server does not have to\n                     perform validation. In this case, the entire MTB\n                     does not need to be submitted via a query\n                     parameter.\n",
+        "operationId": "bobcat_ticketing.validate_controller.validate_ticket",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Ticket Identifier",
+            "format": "string",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Validation event",
+            "in": "body",
+            "name": "validationEvent",
+            "required": true,
+            "schema": { "$ref": "#/definitions/ticketEvent" }
+          },
+          {
+            "description": "MTB",
+            "format": "base64url",
+            "in": "query",
+            "name": "mtb",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "201": {
+            "description": "created",
+            "headers": {
+              "location": {
+                "description": "URI of the new ticketEvent",
+                "type": "string"
+              }
+            },
+            "schema": { "$ref": "#/definitions/ticketEventResult" }
+          },
+          "401": { "description": "unauthorised" },
+          "404": { "description": "ticket not found" }
+        },
+        "summary": "Validate ticket by Ticket ID",
+        "tags": ["validation"]
+      }
+    },
+    "/whitelist": {
+      "get": {
+        "description": "The whitelist is a mechamism used with ID-based travelling\nwhere the travel entitlements tied to a certain token is\ndistriubuted to the validating devices. The purpose of the\nwhitelist function is to account for situations where online\nchecks are unreliable. By having the validating devices\nlooking up travel entitlements locally from the whitelist,\nvalidation can be performed reliably and securely even in\noffline scenarios or when connections to the validation\nendpoint is slow. Each whitelist entry contains the ticket\ninformation required to perform the same validation as had\nthe ticket information been conveyed through the MTB.\n",
+        "operationId": "bobcat_ticketing.validate_controller.get_whitelist",
+        "parameters": [
+          {
+            "description": "JWT authentication token",
+            "in": "header",
+            "name": "X-BoB-AuthToken",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "description": "Get whitelist entries added after whitelistEntryId",
+            "format": "int64",
+            "in": "query",
+            "name": "whitelistEntryId",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "schema": { "$ref": "#/definitions/whitelist" }
+          },
+          "401": { "description": "unauthorised" },
+          "404": { "description": "whitelist not found" }
+        },
+        "summary": "Get whitelist",
+        "tags": ["whitelist"]
+      }
+    }
+  },
+  "schemes": ["https"],
+  "swagger": "2.0"
+}
