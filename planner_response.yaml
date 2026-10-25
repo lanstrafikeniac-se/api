@@ -1,0 +1,133 @@
+$schema: http://json-schema.org/schema#
+
+type: array
+javaType: se.bobcat_ticketing.bobcat.planners.journey.PlannerResponses
+items:
+  type: object
+  javaType: se.bobcat_ticketing.bobcat.planners.journey.PlannerResponse
+  additionalProperties: false
+  required:
+    - id
+    - journeys
+  properties:
+    id:
+      description:  The provided "id" will be returned as plannerInput
+      type: string
+    title:
+      type: string
+      description: Short description of product set
+    journeys:
+      description: A list of different journey alternatives that the product should allow.
+      type: array
+      items:
+        $ref: '#/definitions/journey'
+    journeyMerge:
+      description: How to merge all the journeys into one product.
+        Default action is "noMerge".
+      type: string
+      enum:
+        - noMerge
+        - onlyLeastExpensive
+        - onlyMostExpensive
+        - commonMaxTemporalValidity
+        - commonStartOfValidity
+definitions:
+  journey:
+    description: A journey consisting of one or more links
+    type: object
+    javaType: se.bobcat_ticketing.bobcat.planners.journey.Journey
+    properties:
+      origin:
+        description: Origin stop for journey
+        $ref: '#/definitions/stop'
+      destination:
+        description: Destination stop for journey
+        $ref: '#/definitions/stop'
+      noVat:
+        description: Products should be offered without VAT added
+        type: boolean
+      startOfValidity:
+        description:
+          Request start of validity for product. This value overrides any
+          start of validity specified in the purchase call.
+        type: string
+        format: date-time
+      discountCodes:
+        type: array
+        description: |
+          Discount codes to add to planners journey product set search result.
+        items:
+          type: string
+      tags:
+        description:
+          Tags to refine planner product set search result. Only tags of the type "fare",
+          "modeOfTransport", "product", "property" and "traveller" are allowed.
+        type: array
+        items:
+          type: string
+      links:
+        description: List of journey links, should be ordered from origin to destination.
+          If no links are given, simple journey between origin and destination is assumed.
+        $ref: '#/definitions/link'
+
+  link:
+    description: A link is a continuous trip on the same type of vehicle
+    type: array
+    javaType: se.bobcat_ticketing.bobcat.planners.journey.Link
+    items:
+      type: object
+      required:
+        - origin
+        - destination
+      properties:
+        origin:
+          description: Origin stop for link
+          $ref: '#/definitions/stop'
+        destination:
+          description: Destination stop for link
+          $ref: '#/definitions/stop'
+        optional:
+          description: Link is optional if True
+          $ref: '#/definitions/stop'
+        pids:
+          description: List of pids for this link, should be order from origin to destination
+          type: array
+          items:
+            $ref: '#/definitions/pid'
+        tags:
+          description:
+            Tags to refine product set search result. Only tags of the type "fare",
+            "modeOfTransport", "product", "property" and "traveller" are allowed.
+          type: array
+          items:
+            type: string
+
+  stop:
+    description:
+      Stop used for product selection, you need to define at least one of
+      lat+lon, agencyStopId, name, stopId or zone. If stop isn't within the
+      servers pid you also need to set pid.
+    type: object
+    javaType: se.bobcat_ticketing.bobcat.planners.journey.Stop
+    properties:
+      agencyStopId:
+        type: string
+      lat:
+        type: number
+        format: double
+      long:
+        type: number
+        format: double
+      name:
+        type: string
+      pid:
+        $ref: '#/definitions/pid'
+      stopId:
+        type: string
+      zone:
+        type: string
+
+  pid:
+    type: integer
+    format: int64
+
